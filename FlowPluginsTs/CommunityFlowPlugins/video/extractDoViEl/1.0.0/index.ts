@@ -45,7 +45,6 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
     'demux',
     '-i', `${args.inputFileObj.file}`,
     '--el-out', `${outputFilePath}`,
-    '--no-rpu', // omit RPU extraction here; adjust if you want RPU in the same pass
   ];
   const spawnArgs = cliArgs.map((row) => row.trim()).filter((row) => row !== '');
 

@@ -79,7 +79,6 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                     "".concat(args.inputFileObj.file),
                     '--el-out',
                     "".concat(outputFilePath),
-                    '--no-rpu', // omit RPU extraction here; adjust if you want RPU in the same pass
                 ];
                 spawnArgs = cliArgs.map(function (row) { return row.trim(); }).filter(function (row) { return row !== ''; });
                 cli = new cliUtils_1.CLI({
