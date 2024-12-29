@@ -35,26 +35,23 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.plugin = exports.details = void 0;
-var fileMoveOrCopy_1 = __importDefault(require("../../../../FlowHelpers/1.0.0/fileMoveOrCopy"));
+var cliUtils_1 = require("../../../../FlowHelpers/1.0.0/cliUtils");
 var fileUtils_1 = require("../../../../FlowHelpers/1.0.0/fileUtils");
 /* eslint no-plusplus: ["error", { "allowForLoopAfterthoughts": true }] */
 var details = function () { return ({
-    name: 'Move To Original Directory',
-    description: 'Move working file original directory.',
+    name: 'Inject DoVi EL', // CHANGED
+    description: 'Inject Dolby Vision EL (Enhancement Layer) data', // CHANGED
     style: {
-        borderColor: 'green',
+        borderColor: 'orange',
     },
-    tags: '',
+    tags: 'video',
     isStartPlugin: false,
     pType: '',
     requiresVersion: '2.11.01',
     sidebarPosition: -1,
-    icon: 'faArrowRight',
+    icon: '',
     inputs: [],
     outputs: [
         {
@@ -66,38 +63,50 @@ var details = function () { return ({
 exports.details = details;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, fileName, container, outputDir, ouputFilePath;
+    var lib, pluginWorkDir, elFilePath, outputFilePath, cliArgs, spawnArgs, cli, res;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 lib = require('../../../../../methods/lib')();
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-param-reassign
                 args.inputs = lib.loadDefaultValues(args.inputs, details);
-                fileName = (0, fileUtils_1.getFileName)(args.inputFileObj._id);
-                container = (0, fileUtils_1.getContainer)(args.inputFileObj._id);
-                outputDir = (0, fileUtils_1.getFileAbosluteDir)(args.originalLibraryFile._id);
-                ouputFilePath = "".concat(outputDir, "/").concat(fileName, ".").concat(container);
-                if (args.inputFileObj._id === ouputFilePath) {
-                    args.jobLog('Input and output path are the same, skipping move.');
-                    return [2 /*return*/, {
-                            outputFileObj: {
-                                _id: args.inputFileObj._id,
-                            },
-                            outputNumber: 1,
-                            variables: args.variables,
-                        }];
-                }
-                return [4 /*yield*/, (0, fileMoveOrCopy_1.default)({
-                        operation: 'move',
-                        sourcePath: args.inputFileObj._id,
-                        destinationPath: ouputFilePath,
-                        args: args,
-                    })];
+                pluginWorkDir = "".concat(args.workDir, "/dovi_tool");
+                args.deps.fsextra.ensureDirSync(pluginWorkDir);
+                elFilePath = "".concat(pluginWorkDir, "/").concat((0, fileUtils_1.getFileName)(args.originalLibraryFile._id), ".el.bin");
+                outputFilePath = "".concat((0, fileUtils_1.getPluginWorkDir)(args), "/").concat((0, fileUtils_1.getFileName)(args.originalLibraryFile._id), ".el.hevc");
+                cliArgs = [
+                    'inject-el', // <-- placeholder: adapt as needed
+                    '-i',
+                    "".concat(args.inputFileObj.file),
+                    '--el-in',
+                    "".concat(elFilePath), // <-- placeholder argument
+                    '-o',
+                    "".concat(outputFilePath),
+                ];
+                spawnArgs = cliArgs.map(function (row) { return row.trim(); }).filter(function (row) { return row !== ''; });
+                cli = new cliUtils_1.CLI({
+                    // If you still want to use /usr/local/bin/dovi_tool, keep it.
+                    // Otherwise, specify the path/tool that actually handles EL injection.
+                    cli: '/usr/local/bin/dovi_tool',
+                    spawnArgs: spawnArgs,
+                    spawnOpts: {},
+                    jobLog: args.jobLog,
+                    outputFilePath: outputFilePath,
+                    inputFileObj: args.inputFileObj,
+                    logFullCliOutput: args.logFullCliOutput,
+                    updateWorker: args.updateWorker,
+                });
+                return [4 /*yield*/, cli.runCli()];
             case 1:
-                _a.sent();
+                res = _a.sent();
+                if (res.cliExitCode !== 0) {
+                    args.jobLog('Injecting DoVi EL failed'); // CHANGED
+                    throw new Error('dovi_tool failed');
+                }
+                args.logOutcome('tSuc');
                 return [2 /*return*/, {
                         outputFileObj: {
-                            _id: ouputFilePath,
+                            _id: outputFilePath,
                         },
                         outputNumber: 1,
                         variables: args.variables,
